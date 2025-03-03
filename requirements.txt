@@ -1,0 +1,5 @@
+python=3.11
+pandas
+scipy
+scikit-learn
+ipykernel
