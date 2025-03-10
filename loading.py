@@ -13,7 +13,7 @@ def load_zeek_log(file_path):
     log_to_df = LogToDataFrame()
     df = log_to_df.create_dataframe(file_path)
     df["log_type"] = os.path.basename(file_path)
-    df = df.reset_index()
+    df = df.reset_index()  # proper indexes, not ts (first column)
     return df
 
 
@@ -53,66 +53,7 @@ def merge_logs(zeek_logs, primary_log="conn"):
             suffixes = ("", f"_{log_name}")
             merged_df = merged_df.merge(df, on="uid", how="left", suffixes=suffixes)
 
-    # Merge 'files' log based on 'conn_uid' (same as 'uid' in 'conn' log)
-    if "files" in zeek_logs:
-        print("Merging files...")
-        files_df = zeek_logs["files"]
-        merged_df = merged_df.merge(
-            files_df,
-            left_on="uid",
-            right_on="conn_uids",
-            how="left",
-            suffixes=("", "_files"),
-        )
-
-    """    
-    # Merge 'x509' log based on 'fuid' (same as 'fuid' in 'files' log)
-    if "x509" in zeek_logs:
-        print("Merging x509...")
-        x509_df = zeek_logs["x509"]
-        merged_df = merged_df.merge(
-            x509_df, left_on="fuid", right_on="id", how="left", suffixes=("", "_x509")
-        )"""
-
-    # drop identifier columns (uid for flows, fuid for files associated)
-    columns_to_drop = ["uid", "fuid"]
-    merged_df.drop(
-        columns=[col for col in columns_to_drop if col in merged_df.columns],
-        inplace=True,
-    )
-
     return merged_df
-
-
-def preprocess_zeek_data(df):
-    uint_cols = df.select_dtypes(include=["UInt16", "UInt64"]).columns.tolist()
-    timedelta_cols = df.select_dtypes(include=["timedelta64[ns]"]).columns.tolist()
-    cat_cols = df.select_dtypes(include=["category"]).columns.tolist()
-    object_cols = df.select_dtypes(include=["object"]).columns.tolist()
-
-    """
-    # Convert UInt16 and UInt64 to standard integers
-    for col in uint_cols:
-        df[col] = df[col].astype("Int64")  # Keeps NaN support
-
-    # Convert timedelta columns to seconds
-    for col in timedelta_cols:
-        df[col] = df[col].dt.total_seconds()
-
-    # Convert categorical columns to string for easier handling
-    for col in cat_cols:
-        df[col] = df[col].astype(str).fillna("unknown")
-
-    # Convert object columns (comma-separated lists) into actual lists
-    for col in object_cols:
-        df[col] = df[col].apply(lambda x: x.split(",") if isinstance(x, str) else [])
-
-    # Fill missing values in numerical columns
-    df.fillna({col: 0 for col in uint_cols + timedelta_cols}, inplace=True)
-
-    df = pd.get_dummies(df, columns=cat_cols, drop_first=True) """
-
-    return df
 
 
 def ip_to_int(ip):
