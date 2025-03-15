@@ -54,18 +54,3 @@ def merge_logs(zeek_logs, primary_log="conn"):
             merged_df = merged_df.merge(df, on="uid", how="left", suffixes=suffixes)
 
     return merged_df
-
-
-def ip_to_int(ip):
-    """Convert an IP address to an integer."""
-    try:
-        return int(ipaddress.ip_address(ip))
-    except ValueError:
-        return 0  # Handle invalid IPs
-
-
-def convert_ip_addresses(df, ip_columns):
-    """Convert IP address columns to numerical format."""
-    for col in ip_columns:
-        df[col] = df[col].apply(ip_to_int)
-    return df
